@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>UpDraft board — one-time data import</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<style>
+  body{font-family:'DM Sans',-apple-system,Segoe UI,Arial,sans-serif; max-width:640px; margin:60px auto; padding:0 20px; color:#111111;}
+  h1{font-family:'DM Serif Display',Georgia,serif; font-size:22px; font-weight:400; letter-spacing:-0.02em;}
+  p{line-height:1.6; color:#555555;}
+  button{background:#2563eb; color:#fff; border:none; border-radius:6px; padding:12px 20px; font-size:14px; font-weight:600; cursor:pointer; transition:background .2s;}
+  button:hover:not(:disabled){background:#1d4ed8;}
+  button:disabled{opacity:.5; cursor:default;}
+  #log{margin-top:20px; white-space:pre-wrap; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12.5px; background:#f5f6f8; border:1px solid #e2e4e9; border-radius:8px; padding:14px; max-height:400px; overflow-y:auto;}
+  .warn{background:#fff6e0; color:#b7791f; border:1px solid #f0d998; border-radius:8px; padding:12px 14px; font-size:13px; margin:16px 0;}
+</style>
+</head>
+<body>
+  <h1>UpDraft board — one-time data import</h1>
+  <p>
+    This page loads <code>seed-data.json</code> (a snapshot of the 108 candidates from the original board)
+    and writes each one into your Firebase project's <code>cards</code> collection.
+    Run this <strong>once</strong>, right after you've set up Firebase and filled in
+    <code>firebase-config.js</code> — see README.md, section 4.
+  </p>
+  <div class="warn">
+    Safe to run more than once — it overwrites each candidate with the same seed data rather than
+    duplicating anything. You can delete this file (or just stop linking to it) once the import is done.
+  </div>
+  <button id="go">Import 108 candidates into Firestore</button>
+  <div id="log"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script>
+  var logEl = document.getElementById("log");
+  function log(line){ logEl.textContent += line + "\n"; logEl.scrollTop = logEl.scrollHeight; }
+
+  document.getElementById("go").addEventListener("click", async function(){
+    var btn = this;
+    btn.disabled = true;
+    try {
+      if (typeof firebaseConfig === "undefined" || firebaseConfig.apiKey === "PASTE-YOUR-API-KEY-HERE") {
+        log("ERROR: firebase-config.js isn't set up yet. Copy firebase-config.example.js to firebase-config.js and fill in your project's values first.");
+        btn.disabled = false;
+        return;
+      }
+      firebase.initializeApp(firebaseConfig);
+      var db = firebase.firestore();
+
+      log("Fetching seed-data.json…");
+      var resp = await fetch("seed-data.json");
+      var data = await resp.json();
+      var ids = Object.keys(data);
+      log("Found " + ids.length + " candidates. Writing to Firestore…");
+
+      var done = 0;
+      for (var i = 0; i < ids.length; i++){
+        var id = ids[i];
+        await db.collection("cards").doc(id).set(data[id]);
+        done++;
+        if (done % 10 === 0 || done === ids.length) log("  " + done + " / " + ids.length + " written…");
+      }
+      log("Done! All " + done + " candidates are in Firestore. Open ai-engineer.html to see the board.");
+    } catch (e) {
+      log("ERROR: " + (e && e.message ? e.message : e));
+      log("Common cause: Firestore security rules are blocking writes. Check README.md section 3.");
+    } finally {
+      btn.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>

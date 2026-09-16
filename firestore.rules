@@ -1,0 +1,27 @@
+rules_version = '2';
+
+// These are PASTED INTO the Firebase console (Firestore Database → Rules),
+// not deployed from this repo automatically — see README.md section 3.
+//
+// What this says: anyone who has your Firebase project's config (the values
+// in firebase-config.js) can read and write the "cards" collection and its
+// "comments" sub-collection. That matches how the board worked before (one
+// shared link, no login, anyone with it could edit) — it is NOT locked down
+// to your company by itself. Two ways to actually restrict it:
+//   1. Keep the app's URL and this project's config out of anywhere public
+//      (don't post the Vercel URL somewhere the whole internet can find it).
+//   2. Add Firebase Authentication (e.g. "sign in with Google", restricted
+//      to your company's domain) and change `allow read, write: if true;`
+//      below to `allow read, write: if request.auth != null;`. This is a
+//      bigger step — happy to help set it up later if you want it.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /cards/{cardId} {
+      allow read, write: if true;
+
+      match /comments/{commentId} {
+        allow read, write: if true;
+      }
+    }
+  }
+}

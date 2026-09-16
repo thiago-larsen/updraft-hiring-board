@@ -1,0 +1,9 @@
+# Contains your real Firebase project values — copy from
+# firebase-config.example.js and keep the real one out of git so it's easy
+# to tell "example" from "real" at a glance. (It's not a secret — see the
+# comment at the top of firebase-config.example.js — this is just tidiness.)
+public/firebase-config.js
+
+.DS_Store
+node_modules/
+.firebase/
