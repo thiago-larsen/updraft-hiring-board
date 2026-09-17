@@ -217,6 +217,7 @@
         followup: row["Follow-up Sent to Candidate?"] || "Not yet",
         outcome: row["Outcome / Notes"] || "",
         linkedin: row.LinkedIn || "",
+        opening: "AI Engineer",
         rank: i + 1
       };
       try { await col.doc(id).set(data); } catch(e){ /* another viewer may be racing the same seed */ }
@@ -763,6 +764,11 @@
         outcome: "",
         cvText: cvText,
         cvFileName: cvFile.name,
+        // Which pipeline this candidate belongs to — this file only ever
+        // serves the AI Engineer opening, so it's hardcoded here. A future
+        // opening's own board page would stamp its own value instead. This
+        // is the field the Talent Pool (openings landing page) groups by.
+        opening: "AI Engineer",
         needsReview: true,
         addedBy: getViewerName() || "",
         rank: nextRank(),

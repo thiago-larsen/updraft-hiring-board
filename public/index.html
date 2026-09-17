@@ -84,46 +84,106 @@
   }
 
   .view[hidden]{display:none;}
+
+  /* layout: openings on the left, Talent Pool on the right */
+  .layout{max-width:1240px; margin:0 auto; padding:40px 16px 60px; display:grid; grid-template-columns:1fr 380px; gap:32px; align-items:start;}
+  @media (max-width:860px){ .layout{grid-template-columns:1fr;} }
+  .col-left, .col-right{min-width:0;}
+
+  /* Talent Pool */
+  .tp-panel{background:var(--panel); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); overflow:hidden;}
+  .tp-head{padding:18px 20px 14px; border-bottom:1px solid var(--border-soft);}
+  .tp-head h2{font-family:'DM Serif Display',Georgia,serif; font-weight:400; font-size:18px; margin:0 0 4px; letter-spacing:-0.01em;}
+  .tp-head p{margin:0; font-size:12px; color:var(--text-dim); line-height:1.5;}
+  .tp-search{padding:12px 20px; border-bottom:1px solid var(--border-soft);}
+  .tp-search input{
+    width:100%; padding:8px 10px; border-radius:7px; border:1px solid var(--border); background:var(--panel-2);
+    color:var(--text); font-size:13px; box-sizing:border-box;
+  }
+  .tp-groups{max-height:560px; overflow-y:auto;}
+  .tp-group-head{
+    display:flex; align-items:center; justify-content:space-between; padding:10px 20px; cursor:pointer;
+    background:var(--panel-2); border-bottom:1px solid var(--border-soft); font-size:12.5px; font-weight:650;
+  }
+  .tp-group-head:hover{background:var(--accent-soft);}
+  .tp-group-head .tp-count{font-size:11px; font-weight:650; background:var(--panel); border:1px solid var(--border); color:var(--text-dim); padding:1px 7px; border-radius:999px;}
+  .tp-group-head .tp-chevron{color:var(--text-faint); font-size:11px; transition:transform .15s;}
+  .tp-group-head.open .tp-chevron{transform:rotate(90deg);}
+  .tp-group-list[hidden]{display:none;}
+  .tp-row{padding:9px 20px; border-bottom:1px solid var(--border-soft); font-size:12.5px;}
+  .tp-row:last-child{border-bottom:none;}
+  .tp-row .tp-name{font-weight:650; margin-bottom:2px;}
+  .tp-row .tp-role{color:var(--text-dim); font-size:11.5px; line-height:1.4; margin-bottom:4px;}
+  .tp-row .tp-tags{display:flex; gap:5px; align-items:center; flex-wrap:wrap;}
+  .tp-tag{font-size:10px; padding:1px 6px; border-radius:999px; font-weight:650;}
+  .tp-tag.prio-high{background:#fdeceb; color:#c0362c;}
+  .tp-tag.prio-medium{background:#fff6e0; color:#b7791f;}
+  .tp-tag.prio-low{background:var(--panel-2); color:var(--text-dim); border:1px solid var(--border);}
+  .tp-tag.status{background:var(--accent-soft); color:var(--accent);}
+  .tp-tag.status.rejected{background:#fdeceb; color:#c0362c;}
+  .tp-row a.tp-li{color:#0a66c2; font-size:11px; font-weight:650; text-decoration:none;}
+  .tp-row a.tp-li:hover{text-decoration:underline;}
+  .tp-empty{padding:24px 20px; text-align:center; color:var(--text-faint); font-size:12.5px;}
+  .tp-loading{padding:24px 20px; text-align:center; color:var(--text-faint); font-size:12.5px;}
 </style>
 </head>
 <body>
 <div class="brand-nav"><div class="brand-nav-inner"><span class="brand-logo">UpDraft</span><span class="brand-tag">Hiring</span></div></div>
-<div class="wrap">
-  <div class="titleblock">
-    <div class="eyebrow">Openings</div>
-    <h1>Hiring pipeline</h1>
-    <p>Pick an opening to view its candidate pipeline.</p>
-  </div>
+<div class="layout">
+  <div class="col-left">
+    <div class="titleblock">
+      <div class="eyebrow">Openings</div>
+      <h1>Hiring pipeline</h1>
+      <p>Pick an opening to view its candidate pipeline.</p>
+    </div>
 
-  <div class="page-tabs" id="pageTabs">
-    <button type="button" class="page-tab active" data-tab="available">Available</button>
-    <button type="button" class="page-tab" data-tab="concluded">Concluded</button>
-  </div>
+    <div class="page-tabs" id="pageTabs">
+      <button type="button" class="page-tab active" data-tab="available">Available</button>
+      <button type="button" class="page-tab" data-tab="concluded">Concluded</button>
+    </div>
 
-  <div class="view" id="availableView">
-    <div class="openings-grid">
-      <a class="opening-card" href="ai-engineer.html">
-        <div class="oc-icon">AI</div>
-        <div class="oc-title">AI Engineer</div>
-        <div class="oc-meta" id="aiEngMeta"><span class="dot"></span>Loading…</div>
-      </a>
-      <div class="opening-card placeholder">
-        <div class="oc-title">+ New opening</div>
-        <div class="oc-meta">Future roles will appear here.</div>
+    <div class="view" id="availableView">
+      <div class="openings-grid">
+        <a class="opening-card" href="ai-engineer.html">
+          <div class="oc-icon">AI</div>
+          <div class="oc-title">AI Engineer</div>
+          <div class="oc-meta" id="aiEngMeta"><span class="dot"></span>Loading…</div>
+        </a>
+        <div class="opening-card placeholder">
+          <div class="oc-title">+ New opening</div>
+          <div class="oc-meta">Future roles will appear here.</div>
+        </div>
       </div>
+    </div>
+
+    <div class="view" id="concludedView" hidden>
+      <div class="empty-state">No concluded openings yet.</div>
     </div>
   </div>
 
-  <div class="view" id="concludedView" hidden>
-    <div class="empty-state">No concluded openings yet.</div>
+  <div class="col-right">
+    <div class="tp-panel">
+      <div class="tp-head">
+        <h2>Talent Pool</h2>
+        <p>Every candidate ever added, across every opening — grouped by role so you can find them again even after a pipeline closes.</p>
+      </div>
+      <div class="tp-search">
+        <input type="text" id="tpSearch" placeholder="Search by name…">
+      </div>
+      <div class="tp-groups" id="tpGroups">
+        <div class="tp-loading">Loading…</div>
+      </div>
+    </div>
   </div>
 </div>
 
-<!-- Firebase (compat SDK) — just used here to show a live candidate count on the AI Engineer tile -->
+<!-- Firebase (compat SDK) -->
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
 <script src="firebase-config.js"></script>
 <script src="firebase-init.js"></script>
+<script src="auth-guard.js"></script>
 <script>
   (function(){
     document.querySelectorAll("#pageTabs .page-tab").forEach(function(btn){
@@ -134,18 +194,111 @@
       });
     });
 
-    var metaEl = document.getElementById("aiEngMeta");
-    try {
-      if (window.__firebaseReady && typeof firebase !== "undefined"){
-        firebase.firestore().collection("cards").get().then(function(snap){
-          metaEl.innerHTML = '<span class="dot"></span>' + snap.size + ' candidates in pipeline';
-        }).catch(function(){
-          metaEl.textContent = "Open pipeline";
-        });
+    function escapeHtml(s){
+      return String(s).replace(/[&<>"']/g, function(c){
+        return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+      });
+    }
+
+    var allCards = [];
+    var searchTerm = "";
+    var openGroups = {}; // opening name -> bool, first group defaults open once data loads
+
+    function statusTag(c){
+      if (c.stage === "Rejected") return '<span class="tp-tag status rejected">'+(c.rejectedBy==="claude"?"Rejected — Claude":"Rejected")+'</span>';
+      return '<span class="tp-tag status">'+escapeHtml(c.stage||"Sourced")+'</span>';
+    }
+
+    function renderTalentPool(){
+      var wrap = document.getElementById("tpGroups");
+      var term = searchTerm.trim().toLowerCase();
+      var filtered = allCards.filter(function(c){
+        if (!term) return true;
+        var hay = (c.name + " " + (c.role||"")).toLowerCase();
+        return hay.indexOf(term) !== -1;
+      });
+
+      if (allCards.length === 0){
+        wrap.innerHTML = '<div class="tp-empty">No candidates yet.</div>';
         return;
       }
-    } catch(e){}
-    metaEl.textContent = "Open pipeline";
+      if (filtered.length === 0){
+        wrap.innerHTML = '<div class="tp-empty">No matches for "'+escapeHtml(searchTerm)+'".</div>';
+        return;
+      }
+
+      var groups = {};
+      filtered.forEach(function(c){
+        var key = c.opening || "Unspecified";
+        (groups[key] = groups[key] || []).push(c);
+      });
+      var groupNames = Object.keys(groups).sort();
+
+      // default: first group open, rest collapsed, once (not re-collapsed on every re-render/search)
+      if (Object.keys(openGroups).length === 0 && groupNames.length){
+        openGroups[groupNames[0]] = true;
+      }
+      // while searching, expand every group that has a match so results aren't hidden
+      if (term) groupNames.forEach(function(g){ openGroups[g] = true; });
+
+      wrap.innerHTML = groupNames.map(function(g){
+        var items = groups[g].sort(function(a,b){ return a.name.localeCompare(b.name); });
+        var isOpen = !!openGroups[g];
+        var rows = items.map(function(c){
+          return '<div class="tp-row">' +
+            '<div class="tp-name">'+escapeHtml(c.name)+'</div>' +
+            (c.role ? '<div class="tp-role">'+escapeHtml(c.role)+'</div>' : '') +
+            '<div class="tp-tags">' +
+              '<span class="tp-tag prio-'+(c.priority||"Medium").toLowerCase()+'">'+escapeHtml(c.priority||"Medium")+'</span>' +
+              statusTag(c) +
+              (c.linkedin ? '<a class="tp-li" href="'+escapeHtml(c.linkedin)+'" target="_blank" rel="noopener noreferrer">LinkedIn ↗</a>' : '') +
+            '</div>' +
+          '</div>';
+        }).join("");
+        return '<div class="tp-group">' +
+          '<div class="tp-group-head'+(isOpen?" open":"")+'" data-group="'+escapeHtml(g)+'">' +
+            '<span><span class="tp-chevron">▶</span> '+escapeHtml(g)+'</span>' +
+            '<span class="tp-count">'+items.length+'</span>' +
+          '</div>' +
+          '<div class="tp-group-list"'+(isOpen?"":" hidden")+'>'+rows+'</div>' +
+        '</div>';
+      }).join("");
+
+      wrap.querySelectorAll(".tp-group-head").forEach(function(head){
+        head.addEventListener("click", function(){
+          var g = head.dataset.group;
+          openGroups[g] = !openGroups[g];
+          renderTalentPool();
+        });
+      });
+    }
+
+    document.getElementById("tpSearch").addEventListener("input", function(e){
+      searchTerm = e.target.value;
+      renderTalentPool();
+    });
+
+    function initTalentPool(){
+      firebase.firestore().collection("cards").onSnapshot(function(snap){
+        allCards = snap.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); });
+        renderTalentPool();
+      }, function(){
+        document.getElementById("tpGroups").innerHTML = '<div class="tp-empty">Couldn\'t load the talent pool.</div>';
+      });
+    }
+
+    var metaEl = document.getElementById("aiEngMeta");
+    if (window.onAuthReady){
+      window.onAuthReady(function(){
+        initTalentPool();
+        firebase.firestore().collection("cards").get().then(function(snap){
+          metaEl.innerHTML = '<span class="dot"></span>' + snap.size + ' candidates in pipeline';
+        }).catch(function(){ metaEl.textContent = "Open pipeline"; });
+      });
+    } else {
+      metaEl.textContent = "Open pipeline";
+      document.getElementById("tpGroups").innerHTML = '<div class="tp-empty">Sign in to view the talent pool.</div>';
+    }
   })();
 </script>
 </body>
