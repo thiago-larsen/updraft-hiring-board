@@ -1148,5 +1148,9 @@
     });
   });
 
-  init();
+  // auth-guard.js (loaded before this file) holds off calling init() until
+  // someone is actually signed in — Firestore rules now require it anyway,
+  // so touching "cards" any earlier would just fail with permission-denied.
+  if (window.onAuthReady) window.onAuthReady(init);
+  else init();
 })();

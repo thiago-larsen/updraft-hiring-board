@@ -5,5 +5,8 @@
   "description": "Dev-only helper scripts (not deployed — firebase.json only hosts public/). Used by Claude Code to fetch candidate CVs pasted through the board's 'Add candidate' form and write review results back to Firestore.",
   "dependencies": {
     "firebase": "^10.13.2"
+  },
+  "devDependencies": {
+    "bcryptjs": "^3.0.3"
   }
 }

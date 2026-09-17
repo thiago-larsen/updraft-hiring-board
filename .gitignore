@@ -7,3 +7,8 @@ public/firebase-config.js
 .DS_Store
 node_modules/
 .firebase/
+
+# Automation bot's Firebase Auth credentials — local-only, never committed.
+# The scheduled cloud routine gets these as private environment variables
+# instead (set via the RemoteTrigger/routine config, not this repo).
+.env.local
