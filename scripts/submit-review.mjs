@@ -26,7 +26,11 @@ await updateDoc(doc(db, "cards", id), {
   fitScore: Number(fitScoreRaw),
   priority,
   outcome,
-  needsReview: false
+  needsReview: false,
+  // Being reviewed counts as attention — starts a fresh 3-day staleness
+  // clock for scripts/auto-reject-stale.mjs rather than back-dating it to
+  // whenever the candidate was originally added.
+  lastTouchedAt: new Date().toISOString()
 });
 
 console.log(`Updated ${id}: fitScore=${fitScoreRaw}, priority=${priority}, needsReview=false`);

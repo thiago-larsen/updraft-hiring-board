@@ -461,6 +461,7 @@
   function moveCard(id, stage){
     var prev = cardsById[id] ? cardsById[id].stage : null;
     var patch = stagePatch(prev, stage);
+    patch.lastTouchedAt = new Date().toISOString();
     if (cardsById[id]) Object.assign(cardsById[id], patch); // optimistic
     renderCurrentView();
     if (!db) return;
@@ -678,7 +679,8 @@
         cvFileName: cvFile.name,
         needsReview: true,
         addedBy: getViewerName() || "",
-        rank: nextRank()
+        rank: nextRank(),
+        lastTouchedAt: new Date().toISOString()
       });
       closeAddCandidateModal();
       showToast("Candidate added — ask Claude Code to review the CV when ready.");
@@ -799,6 +801,9 @@
     } else {
       patch = {}; patch[field] = value;
     }
+    // Any edit counts as human attention, which resets the staleness clock
+    // the auto-discard sweep (scripts/auto-reject-stale.mjs) reads from.
+    patch.lastTouchedAt = new Date().toISOString();
     if (cardsById[id]) Object.assign(cardsById[id], patch);
     var hint = document.getElementById("saveHint");
     if (!db){ if (hint) hint.textContent = "Not connected — change not saved."; return; }
@@ -1092,6 +1097,7 @@
     db.doc("cards/"+id).collection("comments").add({
       text: text, author: author, ts: new Date().toISOString()
     }).then(function(){
+      db.doc("cards/"+id).update({lastTouchedAt: new Date().toISOString()}).catch(function(){});
       input.value = "";
       btn.disabled = false;
       if (hint) hint.textContent = "";
