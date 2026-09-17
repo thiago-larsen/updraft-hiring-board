@@ -44,8 +44,50 @@
   // moment a card's stage becomes "Rejected", pageOf() above routes it off
   // the Ongoing page entirely — it lands on "Rejected by Us" automatically,
   // so this column always renders empty on Ongoing right after a drop.
-  function stagesForPage(page){
-    return page === "ongoing" ? STAGES : ["Rejected"];
+  //
+  // Each page's columns are described as {key, label, match, onDrop} so
+  // renderBoard() doesn't need to special-case any one page: "match" decides
+  // which cards land in the column, "onDrop" decides what a drag-and-drop
+  // into it actually does. Most columns key off "stage" like before; the
+  // Rejected-by-Us page instead uses a "rejectedReason" field to split its
+  // one bucket into three, since every card there already has stage
+  // "Rejected" — "reason" is the thing that still varies.
+  function columnsForPage(page){
+    if (page === "ongoing"){
+      return STAGES.map(function(s){
+        return {
+          key: s, label: s,
+          match: function(c){ return c.stage === s; },
+          onDrop: function(id){ if (cardsById[id].stage !== s) moveCard(id, s); }
+        };
+      });
+    }
+    if (page === "rejected_us"){
+      return [
+        {
+          key: "rejected_general", label: "Rejected",
+          match: function(c){ return !c.rejectedReason; },
+          onDrop: function(id){ if (cardsById[id].rejectedReason) setRejectedReason(id, null); }
+        },
+        {
+          key: "missed_interview", label: "Missed the Interview",
+          match: function(c){ return c.rejectedReason === "missed_interview"; },
+          onDrop: function(id){ if (cardsById[id].rejectedReason !== "missed_interview") setRejectedReason(id, "missed_interview"); }
+        },
+        {
+          key: "second_chance", label: "Second Chance", action: true,
+          emptyText: "Drop a candidate here to send them back to Sourced on the Ongoing pipeline.",
+          match: function(){ return false; }, // never a resting place — see sendToSecondChance()
+          onDrop: function(id){ sendToSecondChance(id); }
+        }
+      ];
+    }
+    // rejected_claude
+    return [{
+      key: "Rejected", label: "Rejected",
+      match: function(c){ return c.stage === "Rejected"; },
+      onDrop: function(id){ if (cardsById[id].stage !== "Rejected") moveCard(id, "Rejected"); }
+    }];
   }
   function updatePageTabBadges(){
     var counts = {ongoing:0, rejected_us:0, rejected_claude:0};
@@ -217,23 +259,23 @@
     var board = document.getElementById("board");
     board.innerHTML = "";
     var visibleCount = 0;
-    var stageList = stagesForPage(activePage);
-    var singleCol = stageList.length === 1;
+    var columns = columnsForPage(activePage);
+    var singleCol = columns.length === 1;
     var pageIds = order.filter(function(id){ return cardsById[id] && pageOf(cardsById[id]) === activePage; });
     var total = pageIds.length;
 
-    stageList.forEach(function(stage){
-      var ids = pageIds.filter(function(id){ return cardsById[id].stage === stage; });
+    columns.forEach(function(colDef){
+      var ids = pageIds.filter(function(id){ return colDef.match(cardsById[id]); });
       var visIds = ids.filter(function(id){ return matchesFilters(cardsById[id]); });
       visibleCount += visIds.length;
 
       var col = document.createElement("div");
-      col.className = "column" + (singleCol ? " wide" : "");
-      col.dataset.stage = stage;
+      col.className = "column" + (singleCol ? " wide" : "") + (colDef.action ? " action" : "");
+      col.dataset.stage = colDef.key;
 
       var head = document.createElement("div");
       head.className = "column-head";
-      head.innerHTML = '<span class="ct">'+escapeHtml(stage)+'</span><span class="cn">'+ids.length+'</span>';
+      head.innerHTML = '<span class="ct">'+escapeHtml(colDef.label)+'</span><span class="cn">'+ids.length+'</span>';
       col.appendChild(head);
 
       var body = document.createElement("div");
@@ -243,6 +285,7 @@
         var empty = document.createElement("div");
         empty.className = "column-empty";
         if (ids.length !== 0) empty.textContent = "No matches";
+        else if (colDef.emptyText) empty.textContent = colDef.emptyText;
         else if (activePage === "rejected_claude") empty.textContent = "Empty — the auto-discard automation is paused, so nothing lands here yet.";
         else empty.textContent = "No candidates";
         body.appendChild(empty);
@@ -258,7 +301,7 @@
         e.preventDefault();
         col.classList.remove("dragover");
         var id = e.dataTransfer.getData("text/plain");
-        if (id && cardsById[id] && cardsById[id].stage !== stage) moveCard(id, stage);
+        if (id && cardsById[id]) colDef.onDrop(id);
       });
 
       board.appendChild(col);
@@ -390,6 +433,12 @@
       rtag.textContent = "🔎 Needs review";
       tags.appendChild(rtag);
     }
+    if (c.rejectedReason === "missed_interview"){
+      var mtag = document.createElement("span");
+      mtag.className = "tag needs-review";
+      mtag.textContent = "Missed the interview";
+      tags.appendChild(mtag);
+    }
     card.appendChild(tags);
 
     var foot = document.createElement("div");
@@ -467,6 +516,43 @@
     if (!db) return;
     db.doc("cards/"+id).update(patch).catch(function(err){
       if (cardsById[id] && prev) { cardsById[id].stage = prev; }
+      renderCurrentView();
+      showToast("Couldn't move that card (" + (err && err.code ? err.code : "error") + "). Please try again.");
+    });
+  }
+
+  // Sub-categorizes a card within the Rejected-by-Us page — every card there
+  // already has stage "Rejected", so this is a second, independent field
+  // rather than another stage value. null means the plain "Rejected" bucket.
+  function setRejectedReason(id, reason){
+    var prev = cardsById[id] ? cardsById[id].rejectedReason : null;
+    var patch = {rejectedReason: reason || null, lastTouchedAt: new Date().toISOString()};
+    if (cardsById[id]) Object.assign(cardsById[id], patch);
+    renderCurrentView();
+    if (!db) return;
+    db.doc("cards/"+id).update(patch).catch(function(err){
+      if (cardsById[id]) cardsById[id].rejectedReason = prev;
+      renderCurrentView();
+      showToast("Couldn't move that card (" + (err && err.code ? err.code : "error") + "). Please try again.");
+    });
+  }
+
+  // Dropping a card on "Second Chance" (Rejected by Us page) sends it back
+  // to Sourced on the Ongoing pipeline — same un-reject mechanics as dragging
+  // a card's Stage off "Rejected" anywhere else (stagePatch clears
+  // rejectedBy), plus clearing rejectedReason since it no longer applies.
+  // lastTouchedAt resets too, so a Low-priority revival isn't immediately
+  // swept up again by the stale-candidate cleanup.
+  function sendToSecondChance(id){
+    var prev = cardsById[id] ? {stage: cardsById[id].stage, rejectedBy: cardsById[id].rejectedBy, rejectedReason: cardsById[id].rejectedReason} : null;
+    var patch = {stage: "Sourced", rejectedBy: null, rejectedReason: null, lastTouchedAt: new Date().toISOString()};
+    if (cardsById[id]) Object.assign(cardsById[id], patch);
+    renderCurrentView();
+    if (!db) return;
+    db.doc("cards/"+id).update(patch).then(function(){
+      showToast("Sent back to Sourced on the Ongoing pipeline.");
+    }).catch(function(err){
+      if (cardsById[id] && prev) Object.assign(cardsById[id], prev);
       renderCurrentView();
       showToast("Couldn't move that card (" + (err && err.code ? err.code : "error") + "). Please try again.");
     });
