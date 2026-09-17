@@ -52,15 +52,50 @@
   // Rejected-by-Us page instead uses a "rejectedReason" field to split its
   // one bucket into three, since every card there already has stage
   // "Rejected" — "reason" is the thing that still varies.
+  // The "Contacted" stage splits into three columns by a "contactStatus"
+  // field (mirroring the rejectedReason pattern above) so the board shows
+  // reply status at a glance instead of one undifferentiated bucket.
+  // Dragging a card in from any other stage sets both stage:"Contacted" and
+  // the target contactStatus in one move, since dropping straight onto
+  // "Answered" clearly means both at once.
+  function contactedSubColumns(){
+    return [
+      {
+        key: "contacted_awaiting", label: "Awaiting Reply",
+        match: function(c){ return c.stage === "Contacted" && !c.contactStatus; },
+        onDrop: function(id){
+          if (cardsById[id].stage !== "Contacted" || cardsById[id].contactStatus) setContactStatus(id, null);
+        }
+      },
+      {
+        key: "contacted_answered", label: "Answered", tone: "positive",
+        match: function(c){ return c.stage === "Contacted" && c.contactStatus === "answered"; },
+        onDrop: function(id){
+          if (cardsById[id].stage !== "Contacted" || cardsById[id].contactStatus !== "answered") setContactStatus(id, "answered");
+        }
+      },
+      {
+        key: "contacted_no_response", label: "Didn't Answer", tone: "warn",
+        match: function(c){ return c.stage === "Contacted" && c.contactStatus === "no_response"; },
+        onDrop: function(id){
+          if (cardsById[id].stage !== "Contacted" || cardsById[id].contactStatus !== "no_response") setContactStatus(id, "no_response");
+        }
+      }
+    ];
+  }
+
   function columnsForPage(page){
     if (page === "ongoing"){
-      return STAGES.map(function(s){
-        return {
+      var cols = [];
+      STAGES.forEach(function(s){
+        if (s === "Contacted"){ cols = cols.concat(contactedSubColumns()); return; }
+        cols.push({
           key: s, label: s,
           match: function(c){ return c.stage === s; },
           onDrop: function(id){ if (cardsById[id].stage !== s) moveCard(id, s); }
-        };
+        });
       });
+      return cols;
     }
     if (page === "rejected_us"){
       return [
@@ -271,7 +306,7 @@
       visibleCount += visIds.length;
 
       var col = document.createElement("div");
-      col.className = "column" + (singleCol ? " wide" : "") + (colDef.action ? " action" : "");
+      col.className = "column" + (singleCol ? " wide" : "") + (colDef.action ? " action" : "") + (colDef.tone ? " tone-" + colDef.tone : "");
       col.dataset.stage = colDef.key;
 
       var head = document.createElement("div");
@@ -457,6 +492,12 @@
       mtag.textContent = "Missed the interview";
       tags.appendChild(mtag);
     }
+    if (c.stage === "Contacted" && c.contactStatus){
+      var ctag = document.createElement("span");
+      ctag.className = "tag " + (c.contactStatus === "answered" ? "answered" : "no-response");
+      ctag.textContent = c.contactStatus === "answered" ? "Answered" : "Didn't answer";
+      tags.appendChild(ctag);
+    }
     card.appendChild(tags);
 
     var foot = document.createElement("div");
@@ -550,6 +591,21 @@
     if (!db) return;
     db.doc("cards/"+id).update(patch).catch(function(err){
       if (cardsById[id]) cardsById[id].rejectedReason = prev;
+      renderCurrentView();
+      showToast("Couldn't move that card (" + (err && err.code ? err.code : "error") + "). Please try again.");
+    });
+  }
+
+  // Moves a card into the Contacted stage (if it wasn't already there) and
+  // sets its reply status in one write — see contactedSubColumns() above.
+  function setContactStatus(id, status){
+    var prev = cardsById[id] ? {stage: cardsById[id].stage, contactStatus: cardsById[id].contactStatus} : null;
+    var patch = {stage: "Contacted", contactStatus: status || null, lastTouchedAt: new Date().toISOString()};
+    if (cardsById[id]) Object.assign(cardsById[id], patch);
+    renderCurrentView();
+    if (!db) return;
+    db.doc("cards/"+id).update(patch).catch(function(err){
+      if (cardsById[id] && prev) Object.assign(cardsById[id], prev);
       renderCurrentView();
       showToast("Couldn't move that card (" + (err && err.code ? err.code : "error") + "). Please try again.");
     });
