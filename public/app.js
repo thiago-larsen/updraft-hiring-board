@@ -386,6 +386,13 @@
     visIds.forEach(function(id){ if (db && !(id in commentsCache)) fetchCommentCount(id); });
   }
 
+  function initials(name){
+    var parts = String(name||"").trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return "?";
+    if (parts.length === 1) return parts[0].slice(0,2).toUpperCase();
+    return (parts[0][0] + parts[parts.length-1][0]).toUpperCase();
+  }
+
   function renderCard(c){
     var card = document.createElement("div");
     card.className = "card";
@@ -394,10 +401,20 @@
 
     var top = document.createElement("div");
     top.className = "card-top";
+    var idWrap = document.createElement("div");
+    idWrap.className = "card-id";
+    var avatar = document.createElement("div");
+    avatar.className = "card-avatar";
+    avatar.textContent = initials(c.name);
+    idWrap.appendChild(avatar);
+    var nameWrap = document.createElement("div");
+    nameWrap.className = "card-name-wrap";
     var name = document.createElement("div");
     name.className = "card-name";
     name.textContent = c.name;
-    top.appendChild(name);
+    nameWrap.appendChild(name);
+    idWrap.appendChild(nameWrap);
+    top.appendChild(idWrap);
     card.appendChild(top);
 
     var role = document.createElement("div");
@@ -804,7 +821,7 @@
 
     modal.innerHTML =
       '<div class="modal-head">' +
-        '<div><h2>'+escapeHtml(c.name)+'</h2><div class="modal-role">'+escapeHtml(c.role||"")+'</div></div>' +
+        '<div class="modal-id"><div class="card-avatar modal-avatar">'+initials(c.name)+'</div><div><h2>'+escapeHtml(c.name)+'</h2><div class="modal-role">'+escapeHtml(c.role||"")+'</div></div></div>' +
         '<button class="close-btn" id="closeBtn" aria-label="Close">&times;</button>' +
       '</div>' +
       '<div class="fitscore-line">' +
