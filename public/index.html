@@ -262,6 +262,12 @@
       return (parts[0][0] + parts[parts.length-1][0]).toUpperCase();
     }
 
+    // Strips accents/diacritics (á, ã, ç, é, …) and lowercases, so searching
+    // "joao" finds "João" and "jose" finds "José".
+    function normalizeSearch(s){
+      return String(s||"").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+    }
+
     var allCards = [];
     var searchTerm = "";
     var openGroups = {}; // opening name -> bool, first group defaults open once data loads
@@ -273,10 +279,10 @@
 
     function renderTalentPool(){
       var wrap = document.getElementById("tpGroups");
-      var term = searchTerm.trim().toLowerCase();
+      var term = normalizeSearch(searchTerm.trim());
       var filtered = allCards.filter(function(c){
         if (!term) return true;
-        var hay = (c.name + " " + (c.role||"")).toLowerCase();
+        var hay = normalizeSearch(c.name + " " + (c.role||""));
         return hay.indexOf(term) !== -1;
       });
 

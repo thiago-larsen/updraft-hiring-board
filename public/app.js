@@ -281,11 +281,18 @@
     });
   }
 
+  // Strips accents/diacritics (á, ã, ç, é, …) and lowercases, so searching
+  // "joao" finds "João" and "jose" finds "José" — plain .toLowerCase() alone
+  // only handles case, not diacritics.
+  function normalizeSearch(s){
+    return String(s||"").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  }
+
   function matchesFilters(c){
     if (priorityFilterVal && c.priority !== priorityFilterVal) return false;
     if (sourceFilterVal && (c.source || "Lead") !== sourceFilterVal) return false;
     if (searchTerm){
-      var hay = (c.name + " " + (c.role||"")).toLowerCase();
+      var hay = normalizeSearch(c.name + " " + (c.role||""));
       if (hay.indexOf(searchTerm) === -1) return false;
     }
     return true;
@@ -1278,7 +1285,7 @@
   // ---------- toolbar ----------
 
   document.getElementById("search").addEventListener("input", function(e){
-    searchTerm = e.target.value.trim().toLowerCase();
+    searchTerm = normalizeSearch(e.target.value.trim());
     renderCurrentView();
   });
   document.querySelectorAll("#prioPills .prio-pill").forEach(function(btn){
