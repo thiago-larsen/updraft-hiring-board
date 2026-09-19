@@ -544,6 +544,7 @@
       right.appendChild(em);
     }
     var commentsSpan = document.createElement("span");
+    commentsSpan.className = "comment-count";
     commentsSpan.textContent = "💬 " + (commentsCache[c.id] ? commentsCache[c.id].length : "");
     right.appendChild(commentsSpan);
     foot.appendChild(owner);
@@ -565,7 +566,11 @@
 
   function updateCommentBadges(id){
     var n = commentsCache[id] ? commentsCache[id].length : 0;
-    var cardEl = document.querySelector('.card[data-id="'+cssEscape(id)+'"] .comments');
+    // Targets .comment-count specifically, not the whole .comments footer —
+    // that footer also holds the LinkedIn/email links, and overwriting its
+    // textContent here used to silently wipe those out the moment the
+    // comment count loaded (which happens on every card, every render).
+    var cardEl = document.querySelector('.card[data-id="'+cssEscape(id)+'"] .comment-count');
     if (cardEl) cardEl.textContent = "💬 " + n;
     var sheetEl = document.querySelector('.sc-comments[data-open="'+cssEscape(id)+'"]');
     if (sheetEl) sheetEl.textContent = n || "";
