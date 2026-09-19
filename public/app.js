@@ -11,6 +11,11 @@
   var SOURCES = ["Lead","Applied"];
   var CONTACTED_OPTS = ["No","Yes"];
 
+  // Shared envelope icon for every "we have this candidate's email" badge
+  // (card footer, sheet column, modal, Talent Pool) — one definition so the
+  // glyph stays identical everywhere instead of drifting per call site.
+  var EMAIL_ICON_SVG = '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 6 10 7 10-7"/></svg>';
+
   var SEED = [{"Candidate": "Vinícius Gurski Ferraz", "Fit Score": 80.5, "Stage": "Sourced", "Priority": "High", "Source": "Lead", "Owner": null, "Last Contact Date": null, "Next Action": null, "Follow-up Sent to Candidate?": "Not yet", "Internal Comments": null, "Outcome / Notes": null, "Role": "AI Engineer @ Itaú Unibanco (ex-Compass.uol, Advolve.ai)", "LinkedIn": "https://www.linkedin.com/in/viniciusgferraz"}];
 
   var db = null;
@@ -388,13 +393,16 @@
     var head =
       '<thead><tr>' +
         '<th></th><th>Candidate</th><th>Role</th><th>Stage</th><th>Priority</th><th>Source</th>' +
-        '<th>Owner</th><th>Contacted</th><th>Follow-up</th><th>Next action</th><th>in</th><th>💬</th>' +
+        '<th>Owner</th><th>Contacted</th><th>Follow-up</th><th>Next action</th><th>in</th><th>@</th><th>💬</th>' +
       '</tr></thead>';
 
     var rows = visIds.map(function(id, i){
       var c = cardsById[id];
       var liCell = c.linkedin
         ? '<a class="li-link" href="'+escapeHtml(c.linkedin)+'" target="_blank" rel="noopener noreferrer" title="Open LinkedIn profile">in</a>'
+        : '';
+      var emailCell = c.email
+        ? '<a class="email-link" href="mailto:'+escapeHtml(c.email)+'" title="'+escapeHtml(c.email)+'">'+EMAIL_ICON_SVG+'</a>'
         : '';
       var nComments = commentsCache[id] ? commentsCache[id].length : "";
       return '<tr>' +
@@ -409,6 +417,7 @@
         '<td><select data-id="'+escapeHtml(id)+'" data-field="followup">'+fieldOptionsHtml(FOLLOWUPS, c.followup)+'</select></td>' +
         '<td><input type="text" data-id="'+escapeHtml(id)+'" data-field="nextAction" value="'+escapeHtml(c.nextAction||"")+'" placeholder="—"></td>' +
         '<td class="sc-li">'+liCell+'</td>' +
+        '<td class="sc-li">'+emailCell+'</td>' +
         '<td class="sc-comments" data-open="'+escapeHtml(id)+'">'+nComments+'</td>' +
       '</tr>';
     }).join("");
@@ -524,6 +533,15 @@
       li.textContent = "in";
       li.addEventListener("click", function(e){ e.stopPropagation(); });
       right.appendChild(li);
+    }
+    if (c.email){
+      var em = document.createElement("a");
+      em.className = "email-link";
+      em.href = "mailto:" + c.email;
+      em.title = "Email: " + c.email;
+      em.innerHTML = EMAIL_ICON_SVG;
+      em.addEventListener("click", function(e){ e.stopPropagation(); });
+      right.appendChild(em);
     }
     var commentsSpan = document.createElement("span");
     commentsSpan.textContent = "💬 " + (commentsCache[c.id] ? commentsCache[c.id].length : "");
@@ -879,6 +897,9 @@
     var liRow = c.linkedin
       ? '<a class="li-link-full" href="'+escapeHtml(c.linkedin)+'" target="_blank" rel="noopener noreferrer"><span class="li-badge">in</span>View LinkedIn profile ↗</a>'
       : '<span style="font-size:12px;color:var(--text-faint)">No LinkedIn link on file</span>';
+    var emailRow = c.email
+      ? '<a class="li-link-full" href="mailto:'+escapeHtml(c.email)+'"><span class="li-badge email-badge">'+EMAIL_ICON_SVG+'</span>'+escapeHtml(c.email)+'</a>'
+      : '';
 
     var srcVal = c.source || "Lead";
 
@@ -892,7 +913,7 @@
         '<span class="tag src-'+srcVal.toLowerCase()+'">'+escapeHtml(srcVal)+'</span>' +
         (c.stage === "Rejected" ? '<span class="tag" style="background:var(--gray-bg);color:var(--text-dim);">Rejected by '+(c.rejectedBy==="claude"?"Claude":"Us")+'</span>' : '') +
       '</div>' +
-      '<div style="margin:-6px 0 14px;">'+liRow+'</div>' +
+      '<div style="margin:-6px 0 14px; display:flex; flex-direction:column; gap:6px;">'+liRow+emailRow+'</div>' +
       (c.needsReview ? '<div class="cv-banner">⏳ Awaiting review — ask Claude Code to review this candidate\'s CV and fill in fit score, priority and notes.</div>' : '') +
       (c.cvText ? '<div class="field full" style="margin-bottom:10px;"><label>CV text'+(c.cvFileName?' (from '+escapeHtml(c.cvFileName)+')':'')+'</label><textarea readonly rows="6" style="opacity:.85;">'+escapeHtml(c.cvText)+'</textarea></div>' : '') +
       '<div class="field-grid">' +

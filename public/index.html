@@ -170,6 +170,7 @@
   .tp-tag.status.rejected{background:#fdeceb; color:#c0362c;}
   .tp-row a.tp-li{color:#0a66c2; font-size:11px; font-weight:650; text-decoration:none;}
   .tp-row a.tp-li:hover{text-decoration:underline;}
+  .tp-row a.tp-email{color:var(--green);}
   .tp-empty{padding:24px 20px; text-align:center; color:var(--text-faint); font-size:12.5px;}
   .tp-loading{padding:24px 20px; text-align:center; color:var(--text-faint); font-size:12.5px;}
 
@@ -322,6 +323,7 @@
                 '<span class="tp-tag prio-'+(c.priority||"Medium").toLowerCase()+'">'+escapeHtml(c.priority||"Medium")+'</span>' +
                 statusTag(c) +
                 (c.linkedin ? '<a class="tp-li" href="'+escapeHtml(c.linkedin)+'" target="_blank" rel="noopener noreferrer">LinkedIn ↗</a>' : '') +
+                (c.email ? '<a class="tp-li tp-email" href="mailto:'+escapeHtml(c.email)+'" title="'+escapeHtml(c.email)+'">Email ↗</a>' : '') +
               '</div>' +
             '</div>' +
           '</div>';
